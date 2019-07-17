@@ -23,6 +23,8 @@ class ImageLoader(torch.utils.data.dataset.Dataset):
                 data = line.split(',')
                 self.data.append(data)
 
+        print(len(self.data))
+
     def __getitem__(self, index):
         img, label = self.data[index][0], int(self.data[index][1])
         img = Image.open(os.path.join(self.data_path, img))
