@@ -15,7 +15,8 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 class ImageLoader(torch.utils.data.dataset.Dataset):
-    def __init__(self, data_path, txt_path):
+    def __init__(self, data_path, txt_path, is_train):
+        self.is_train = is_train
         self.data = []
         self.data_path = data_path
         with open(txt_path, 'r') as f:
@@ -31,13 +32,26 @@ class ImageLoader(torch.utils.data.dataset.Dataset):
 
         img = img.convert('RGB')
 
-        data_transforms = transforms.Compose([
-            transforms.Resize((224, 224)),
-            transforms.ToTensor(),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
-        ])
+        if self.is_train:
+            data_transforms = transforms.Compose([
+                transforms.Resize((256, 256)),
+                transforms.RandomCrop(224),
+                transforms.RandomHorizontalFlip(),
+                transforms.RandomVerticalFlip(),
+                transforms.RandomRotation(45),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            ])
 
-        img = data_transforms(img)
+            img = data_transforms(img)
+        else:
+            data_transforms = transforms.Compose([
+                transforms.Resize((224, 224)),
+                transforms.ToTensor(),
+                transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+            ])
+
+            img = data_transforms(img)
 
         return img, label
 
@@ -101,11 +115,11 @@ class Trainer(object):
         ):
             img, label = Variable(img), Variable(label)
             label = torch.tensor(label, dtype=torch.float32)
-            # img, label = img.cuda(), label.cuda()
+            img, label = img.cuda(), label.cuda()
 
             with torch.no_grad():
-                # result = self.model(img1, img2).cuda().squeeze(1)
-                result = self.model(img).squeeze(1)
+                result = self.model(img).cuda().squeeze(1)
+            #                 result = self.model(img).squeeze(1)
 
             loss_fn = BCELoss(weight=None, reduce=True)
             loss = loss_fn(result, label)
@@ -115,12 +129,12 @@ class Trainer(object):
             label = label.cpu()
             result = result.cpu()
             for index, item in enumerate(result):
-                if item.item() >= 0.5 and label[index].item() == 1:
+                if item.item() > 0.5 and label[index].item() == 1:
                     acc += 1
-                elif item.item() <= 0.5 and label[index].item() == 0:
+                elif item.item() < 0.5 and label[index].item() == 0:
                     acc += 1
 
-            acc /= 64
+            acc /= 16
 
             acc_all.append(acc)
 
@@ -166,10 +180,10 @@ class Trainer(object):
 
             img, label = Variable(img), Variable(label)
             label = torch.tensor(label, dtype=torch.float32)
-            # img, label = img.cuda(), label.cuda()
+            img, label = img.cuda(), label.cuda()
 
-            # result = self.model(img).cuda().squeeze(1)
-            result = self.model(img).squeeze(1)
+            result = self.model(img).cuda().squeeze(1)
+            #             result = self.model(img).squeeze(1)
 
             loss_fn = BCELoss(weight=None, reduce=True)
             loss = loss_fn(result, label)
@@ -191,7 +205,7 @@ class Trainer(object):
                     elif item.item() < 0.5 and label[index].item() == 0:
                         acc += 1
 
-                acc /= 64
+                acc /= 16
 
                 acc_all.append(acc)
 
@@ -218,27 +232,29 @@ class Trainer(object):
 if __name__ == '__main__':
     train_loader = torch.utils.data.DataLoader(
         ImageLoader(
-            data_path='../style_data_clean',
-            txt_path='modern_train.txt'
+            data_path='/data/path/images',
+            txt_path='/data/path/modern_train.txt',
+            is_train=False
         ),
-        batch_size=8,
+        batch_size=16,
         shuffle=True
     )
     val_loader = torch.utils.data.DataLoader(
         ImageLoader(
-            data_path='../style_data_clean',
-            txt_path='modern_val.txt'
+            data_path='/data/path/images',
+            txt_path='/data/path/modern_val.txt',
+            is_train=False
         ),
-        batch_size=8,
+        batch_size=16,
         shuffle=True
     )
 
-    model = StyleClassifier()
+    model = StyleClassifier().cuda()
 
     opt = SGD(
         model.parameters(),
-        lr=1e-4,
-        momentum=0.2
+        lr=1e-6,
+        momentum=0.1
     )
 
     trainer = Trainer(
@@ -246,7 +262,7 @@ if __name__ == '__main__':
         optimizer=opt,
         train_loader=train_loader,
         val_loader=val_loader,
-        out_path='./log',
+        out_path='/out/path/log',
         max_iter=100000
     )
 
