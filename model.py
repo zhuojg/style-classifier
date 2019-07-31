@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torchvision import models, transforms
 from PIL import Image, ImageFile
 from torchsummary import summary
@@ -13,8 +14,8 @@ class StyleClassifier(nn.Module):
         self.cnn = nn.Sequential(*list(self.pre_trained.children())[0])
         self.conv_dr = nn.Conv2d(512, 128, 1)
         self.fc = nn.Linear(in_features=128 * 128, out_features=1024)
-        self.fc_1 = nn.Linear(in_features=1024, out_features=1)
-        self.sig = nn.Sigmoid()
+        self.fc_1 = nn.Linear(in_features=1024, out_features=4)
+        # self.sig = nn.Sigmoid()
 
     def get_style_gram(self, style_features):
         style_features = style_features.view(-1, 7 * 7, 128)
@@ -39,7 +40,7 @@ class StyleClassifier(nn.Module):
         h = self.fc(h)
 
         h = self.fc_1(h)
-        h = self.sig(h)
+        # h = F.log_softmax(h, dim=1)
 
         return h
 

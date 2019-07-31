@@ -3,41 +3,10 @@ from style_classifier.model import StyleClassifier
 import torch
 from PIL import Image, ImageFile
 from torchvision import transforms
-import random
 import matplotlib.pyplot as plt
 import numpy as np
+from style_classifier.utils import random_data_generator, target_data_generator
 ImageFile.LOAD_TRUNCATED_IMAGES = True
-
-
-def random_data_generator(num):
-    result = []
-    f = open('./all.txt', 'r')
-
-    data = f.readlines()
-    random.shuffle(data)
-
-    for i, line in enumerate(data):
-        if i >= num:
-            break
-        result.append(line[:-1])
-
-    return result
-
-
-def target_data_generator(target_tag, num):
-    result = []
-    f = open('./all.txt', 'r')
-
-    data = f.readlines()
-    random.shuffle(data)
-
-    for line in data:
-        if len(result) >= num:
-            break
-        if line.split('/')[0] == target_tag:
-            result.append(line[:-1])
-
-    return result
 
 
 def test(pre_train_model_path, target_tag, sample_num):

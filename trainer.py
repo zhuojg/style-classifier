@@ -2,12 +2,12 @@ import torch
 import os
 import datetime
 from style_classifier.model import StyleClassifier
-from torchvision import transforms
+from torchvision import transforms, datasets
 import tqdm
 from torch.optim import SGD
 import torch.utils.data.dataset
 from torch.autograd import Variable
-from torch.nn import BCELoss
+from torch.nn import BCELoss, CrossEntropyLoss
 import numpy as np
 import math
 from PIL import Image, ImageFile
@@ -121,7 +121,8 @@ class Trainer(object):
                 result = self.model(img).cuda().squeeze(1)
             #                 result = self.model(img).squeeze(1)
 
-            loss_fn = BCELoss(weight=None, reduce=True)
+            # loss_fn = BCELoss(weight=None, reduce=True)
+            loss_fn = CrossEntropyLoss(weight=None, reduce=True)
             loss = loss_fn(result, label)
             val_loss += loss
 
@@ -185,7 +186,8 @@ class Trainer(object):
             result = self.model(img).cuda().squeeze(1)
             #             result = self.model(img).squeeze(1)
 
-            loss_fn = BCELoss(weight=None, reduce=True)
+            # loss_fn = BCELoss(weight=None, reduce=True)
+            loss_fn = CrossEntropyLoss(weight=None, reduce=True)
             loss = loss_fn(result, label)
             try:
                 loss.backward()
@@ -230,21 +232,33 @@ class Trainer(object):
 
 
 if __name__ == '__main__':
+    data_transforms_train = transforms.Compose([
+        transforms.Resize((256, 256)),
+        transforms.RandomCrop(224),
+        transforms.RandomHorizontalFlip(),
+        transforms.RandomVerticalFlip(),
+        transforms.RandomRotation(45),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+    ])
+
+    data_transforms_val = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
+    ])
+
+    train_set = datasets.ImageFolder(root='', transform=data_transforms_train)
+
+    val_set = datasets.ImageFolder(root='', transform=data_transforms_val)
+
     train_loader = torch.utils.data.DataLoader(
-        ImageLoader(
-            data_path='/data/path/images',
-            txt_path='/data/path/modern_train.txt',
-            is_train=False
-        ),
+        train_set,
         batch_size=16,
         shuffle=True
     )
     val_loader = torch.utils.data.DataLoader(
-        ImageLoader(
-            data_path='/data/path/images',
-            txt_path='/data/path/modern_val.txt',
-            is_train=False
-        ),
+        val_set,
         batch_size=16,
         shuffle=True
     )
@@ -253,7 +267,7 @@ if __name__ == '__main__':
 
     opt = SGD(
         model.parameters(),
-        lr=1e-6,
+        lr=1e-4,
         momentum=0.1
     )
 
