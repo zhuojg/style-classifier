@@ -8,8 +8,9 @@ ImageFile.LOAD_TRUNCATED_IMAGES = True
 
 
 class StyleClassifier(nn.Module):
-    def __init__(self):
+    def __init__(self, need_softmax=False):
         super(StyleClassifier, self).__init__()
+        self.need_softmax = need_softmax
         self.pre_trained = models.vgg16(pretrained=True)
         self.cnn = nn.Sequential(*list(self.pre_trained.children())[0])
         self.conv_dr = nn.Conv2d(512, 128, 1)
@@ -40,7 +41,9 @@ class StyleClassifier(nn.Module):
         h = self.fc(h)
 
         h = self.fc_1(h)
-        # h = F.log_softmax(h, dim=1)
+
+        if self.need_softmax:
+            h = F.softmax(h, dim=1)
 
         return h
 
