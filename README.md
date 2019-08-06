@@ -17,8 +17,8 @@ For this multi-classifier, only 4 tags - modern, pop art, lively and vintage, ar
 ## Training
 80% data are used for training and 20% for validation.  
 Using SGD with 1e-4 learning rate and 0.1 momentum.
-![image](https://raw.githubusercontent.com/zhuojg/siamese_network_for_style/master/log/loss.png)  
-![image](https://raw.githubusercontent.com/zhuojg/siamese_network_for_style/master/log/acc.png)  
+![image](https://raw.githubusercontent.com/zhuojg/style_classifier/master/log/loss.png)  
+![image](https://raw.githubusercontent.com/zhuojg/style_classifier/master/log/acc.png)  
 
 ## Result
 The difference in accuracy between the models is relatively small. The training set accuracy rate is about 90%, and the verification set accuracy rate is less than 70%. This shows a significant overfitting.
